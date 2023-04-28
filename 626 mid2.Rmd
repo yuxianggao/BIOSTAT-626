@@ -1,0 +1,109 @@
+---
+title: "626 midterm 2"
+author: "Yuxiang Gao"
+date: "2023-04-27"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(SNPassoc)
+library(Rtsne)
+library(ggplot2)
+library(tsne)
+```
+
+```{r}
+#setwd("/Users/yuxianggao/Desktop/626 Midterm2")
+df=read.table('hgdp.txt')
+```
+
+```{r, dosage coding}
+d<-df[,-c(1:3)]
+my<-setupSNP(d,1:ncol(d),sep = "")
+```
+
+```{r}
+myda<- apply(my,2,additive)
+```
+
+1.  
+
+```{r}
+pca=prcomp(myda)
+#plot(cumsum(pca$sdev^2)/sum(pca$sdev^2),type='l')
+```
+
+```{r}
+pr.var <- pca$sdev^2
+pve <- pr.var / sum (pr.var)
+```
+
+```{r}
+plot ( cumsum (pve), xlab = " Principal Component ",
+ylab = " Cumulative Proportion of Variance Explained ",
+ylim = c(0, 1), type = "b")
+```
+
+```{r}
+m=which(cumsum(pca$sdev^2)/sum(pca$sdev^2)>.8)[1]
+x.pca=pca$x[,1:m]
+```
+
+2.  
+
+```{r}
+set.seed(1)
+tot.withinss=c()
+for(k in 2:10){
+  km=kmeans(x.pca,centers=k)
+  tot.withinss=c(tot.withinss,km$tot.withinss)
+}
+tot.withinss
+
+```
+
+```{r}
+km4=kmeans(x.pca,centers=4)
+```
+
+```{r}
+#plot
+library(ggplot2)
+data=cbind(df[,1:3],x.pca)
+
+p=ggplot(data, aes(PC1,PC2))
+
+p + geom_point(aes(colour=factor(V3),shape=factor(km4$cluster)))
+p=ggplot(data, aes(PC1,PC3))
+p + geom_point(aes(colour=factor(V3),shape=factor(km4$cluster)))
+
+```
+
+3.  
+From the graph above, we can see that a centers=4 works well in clustering. Each of the clustering is decentralized. Different clustering without much similarities are far from each other. We can also see that within one clustering, distribution of data points are compact. In general, we would say a k=4 kmeans is a good clustering choice in splitting up data. 
+
+4.  
+```{r}
+ts_result <- tsne(myda, k=4)
+my_res <- as.data.frame(ts_result)
+my_res$group <- data$V3
+```
+
+```{r}
+#graph from 2 dimension
+ggplot(my_res)+geom_point(aes(V1,V2,color=group))+
+  theme_bw()+
+  labs(x="tsne 1",y="tsne 2")
+```
+
+Comparing T-SNE result to PCA result in 2 dimension, we can see that the clustering structure is similar, but the T-SNE doesn't include factor labels in the graph, which makes it easier for us to read and interpret. For me, I think T-SNE is better than PCA in visualization. 
+
+
+
+
+
+
